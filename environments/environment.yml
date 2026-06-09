@@ -1,0 +1,28 @@
+name: blumenau-flood
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - scipy
+  - xarray
+  - netcdf4
+  - h5py
+  - matplotlib
+  - seaborn
+  - cartopy
+  - geopandas
+  - shapely
+  - jupyter
+  - jupyterlab
+  - tqdm
+  - pyyaml
+  - pip:
+      - torch>=2.2
+      - neuralhydrology
+      - hydroeval
+      - gcsfs
+      - google-cloud-storage

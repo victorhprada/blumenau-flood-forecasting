@@ -1,0 +1,136 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# Data — nunca versionar dados brutos ou processados
+data/raw/
+data/processed/
+data/external/
+
+# Modelos treinados — pesados, usar DVC ou GCS
+models/checkpoints/
+models/experiments/
+
+# Relatórios gerados
+reports/figures/
+reports/outputs/
+
+# Configurações locais e credenciais
+.env
+.env.*
+credentials.json
+*.pem
+
+# Upstream clone
+upstream/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+wandb/
+mlruns/
+mlruns.db
+
+# Claude Code local settings
+.claude/
+
+# Vendor: só o pacote googlehydrology é necessário (test/tutorial somam 61MB)
+vendor/flood-forecasting/test/
+vendor/flood-forecasting/tutorial/
+vendor/flood-forecasting/docs/
+
+# Netcdf timeseries (o CSV já é suficiente)
+data/processed/Caravan-nc/timeseries/netcdf/
+
+# ── Deploy exceptions — artefatos necessários para Streamlit Cloud + Railway ──
+# Técnica: unignore o diretório pai, re-ignore tudo com *, depois abre
+# apenas os caminhos específicos necessários.
+
+# Data: CSV de série temporal + CSVs de atributos
+!data/processed/
+!data/processed/Caravan-nc/
+!data/processed/Caravan-nc/attributes/
+!data/processed/Caravan-nc/attributes/itajai/
+!data/processed/Caravan-nc/attributes/itajai/*.csv
+!data/processed/Caravan-nc/timeseries/
+!data/processed/Caravan-nc/timeseries/csv/
+!data/processed/Caravan-nc/timeseries/csv/itajai/
+!data/processed/Caravan-nc/timeseries/csv/itajai/itajai_83500000.csv
+
+# Models: resultados zarr (5 experimentos) + pesos do Railway (exp03)
+!models/experiments/
+models/experiments/*
+
+!models/experiments/mef_lstm_itajai_baseline_0906_083244/
+models/experiments/mef_lstm_itajai_baseline_0906_083244/*
+!models/experiments/mef_lstm_itajai_baseline_0906_083244/test/
+models/experiments/mef_lstm_itajai_baseline_0906_083244/test/*
+!models/experiments/mef_lstm_itajai_baseline_0906_083244/test/model_epoch015/
+models/experiments/mef_lstm_itajai_baseline_0906_083244/test/model_epoch015/*
+!models/experiments/mef_lstm_itajai_baseline_0906_083244/test/model_epoch015/test_results.zarr
+
+!models/experiments/exp02_lag_features/
+models/experiments/exp02_lag_features/*
+!models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/
+models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/*
+!models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/test/
+models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/test/*
+!models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/test/model_epoch030/
+models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/test/model_epoch030/*
+!models/experiments/exp02_lag_features/exp02_lag_features_0906_111809/test/model_epoch030/test_results.zarr
+
+!models/experiments/exp03_nse_loss/
+models/experiments/exp03_nse_loss/*
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/
+models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/*
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/test/
+models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/test/*
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/test/model_epoch030/
+models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/test/model_epoch030/*
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/test/model_epoch030/test_results.zarr
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/model_epoch030.pt
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/config.yml
+!models/experiments/exp03_nse_loss/exp03_nse_loss_0906_112336/scaler.nc
+
+!models/experiments/exp04_seq_30d/
+models/experiments/exp04_seq_30d/*
+!models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/
+models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/*
+!models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/test/
+models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/test/*
+!models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/test/model_epoch019/
+models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/test/model_epoch019/*
+!models/experiments/exp04_seq_30d/exp04_seq_30d_0906_112529/test/model_epoch019/test_results.zarr
+
+!models/experiments/exp05_era5_statics/
+models/experiments/exp05_era5_statics/*
+!models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/
+models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/*
+!models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/
+models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/*
+!models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/model_epoch028/
+models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/model_epoch028/*
+!models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/model_epoch028/test_results.zarr
+
+# Reports computed outputs (not raw data)
+!reports/comparison_table.csv
+!reports/forecast_rmse.json

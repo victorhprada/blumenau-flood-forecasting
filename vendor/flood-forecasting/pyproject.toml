@@ -1,0 +1,27 @@
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+ignore = [
+  "D203",  # A blank line before class (conflicts: no-blank-line-before-class)
+  "D213",  # Summary on second line (conflicts: multi-line-summary-first-line)
+  "COM812",  # Missing trailing comma
+  "Q000",   # Bad quotes (single quotes)
+  "Q003",   # Bad quotes (avoidable escaped quote)
+  "D413",  # Missing newline after the last section in docstrings
+  "ANN204",  # Missing return type for __init__ (None)
+  "S101",  # assert detected
+  "TRY003",  # long messages in exceptions
+  "EM101",  # Exception must not use a string literal, assign to variable first
+  "EM102",  # Exception must not use an f-string literal, assign to variable first
+]
+
+
+[tool.ruff.format]
+quote-style = "single"
+line-ending = "lf"
+docstring-code-format = true

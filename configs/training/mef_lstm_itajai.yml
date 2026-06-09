@@ -1,0 +1,308 @@
+# ==============================================================================
+# MEF-LSTM — Bacia do Itajaí-Açu (Blumenau, ANA 83500000)
+# Baseado no tutorial/train-config.yml do OpenHydroNet
+# ==============================================================================
+
+experiment_name: mef_lstm_itajai_baseline
+run_dir: models/experiments/
+logging_level: INFO
+detect_anomaly: false
+print_warnings_once: true
+
+# ------------------------------------------------------------------------------
+# DADOS
+# ------------------------------------------------------------------------------
+
+# "multimet" é o único loader registrado no framework. Usa Caravan CSV local
+# quando load_as_csv: true — sem esse flag, tentaria ler Zarr do GCS.
+dataset: multimet
+
+# Com load_as_csv: true o loader lê:
+#   hindcast → timeseries/csv/itajai/itajai_83500000.csv
+#   forecast → fallback para o mesmo CSV (lead_time=0 = dados do dia atual)
+#   targets  → timeseries/csv/itajai/itajai_83500000.csv (só coluna streamflow)
+#   statics  → attributes/itajai/*.csv
+load_as_csv: true
+
+targets_data_dir:  data/processed/Caravan-nc
+statics_data_dir:  data/processed/Caravan-nc
+dynamics_data_dir: data/processed/Caravan-nc
+
+train_basin_file:      configs/training/itajai_basins.txt
+validation_basin_file: configs/training/itajai_basins.txt
+test_basin_file:       configs/training/itajai_basins.txt
+
+# Splits temporais (formato dd/mm/yyyy conforme exigido pelo parser do framework)
+#
+# NOTA: dados ANA 83500000 disponíveis digitalmente apenas a partir de 1995-10-01.
+# A cheia de 1983 não está no banco digital da ANA — seria necessário digitalização
+# manual das fichas históricas para incluí-la.
+#
+# Estratégia: colocar 2008 e 2011 no período de TESTE para avaliação honesta.
+# Treino : 1996–2005 (10 anos de dados estáveis; 1995 é parcial — só out-dez)
+# Val    : 2006–2007 (2 anos — suficiente para early stopping em 1 bacia)
+# Teste  : 2008–2024 (17 anos; inclui cheias de Nov/2008, Set/2011, 2022, 2023)
+train_start_date:      01/01/1996
+train_end_date:        31/12/2005
+validation_start_date: 01/01/2006
+validation_end_date:   31/12/2007
+test_start_date:       01/01/2008
+test_end_date:         31/12/2024
+
+# Variáveis dinâmicas (timeseries) — devem bater com colunas do CSV
+#
+# Por que streamflow foi REMOVIDO dos hindcast_inputs?
+# O Multimet loader adiciona dimensão lead_time ao hindcast (expand_dims).
+# Se streamflow aparece em hindcast_inputs E em target_variables, o merge
+# xr.merge(join='outer') tenta combinar duas variáveis de mesmo nome mas
+# com dims diferentes — (basin, date, lead_time) vs (basin, date) — e falha.
+# A solução é usar apenas forcing meterorológica como hindcast input.
+# Lagged streamflow pode ser adicionado via pré-processamento separado,
+# renomeado (ex: streamflow_lag1) para evitar conflito.
+hindcast_inputs:
+  - total_precipitation   # mm/dia — CHIRPS média areal
+
+forecast_inputs:
+  - total_precipitation   # mm/dia — observado hoje como proxy de previsão NWP
+  # NOTA: sem arquivo {feature}_{basin}.csv, o loader cai no fallback
+  # do {basin}.csv com lead_time=0 — equivalente a "prever 0 chuva além
+  # do dia atual", o que é aceitável para o baseline.
+
+# Atributos estáticos disponíveis para a bacia do Itajaí-Açu.
+# Calculados a partir dos dados CHIRPS (1995–2024).
+# ERA5-Land (pet_mean, aridity, moisture_index) e frac_snow excluídos —
+# não temos os dados fonte para calculá-los corretamente.
+static_attributes:
+  - p_mean
+  - seasonality_ERA5_LAND
+  - high_prec_freq
+  - high_prec_dur
+  - low_prec_freq
+  - low_prec_dur
+
+target_variables:
+  - streamflow
+
+# Com apenas 1 bacia, todos os atributos estáticos têm std=0 (um único ponto).
+# custom_normalization desativa a normalização por std para esses atributos,
+# usando scale=1 (identidade) e center=mean. Isso evita o ZeroScaleError sem
+# alterar o código do framework.
+custom_normalization:
+  p_mean:
+    centering: mean
+    scaling: none
+  seasonality_ERA5_LAND:
+    centering: mean
+    scaling: none
+  high_prec_freq:
+    centering: mean
+    scaling: none
+  high_prec_dur:
+    centering: mean
+    scaling: none
+  low_prec_freq:
+    centering: mean
+    scaling: none
+  low_prec_dur:
+    centering: mean
+    scaling: none
+
+# ------------------------------------------------------------------------------
+# ARQUITETURA
+# [ALTERADO] Veja explicações abaixo
+# ------------------------------------------------------------------------------
+
+model: mean_embedding_forecast_lstm
+
+# [ALTERADO] hidden_size: 128 → 32
+#
+# Razão: o modelo global do Google usa hidden_size=256 treinado em ~5000 bacias.
+# Com apenas 1 bacia e ~7300 amostras de treino (20 anos diários), 128 parâmetros
+# escondidos geram ~500k parâmetros — muito mais do que o necessário e alta
+# chance de overfitting. Com 32, ficamos em ~20k parâmetros, proporcionais ao
+# tamanho dos dados. Regra de bolso: n_params ≈ n_amostras / 10.
+hidden_size: 32
+
+# [ALTERADO] head: cmal → regression
+#
+# "cmal" é o head probabilístico (Countable Mixture of Asymmetric Laplacians)
+# usado no modelo operacional do Google. Ele prediz uma distribuição de
+# probabilidades, não um único valor — ótimo para previsão operacional.
+# Para o baseline, usamos "regression" (saída determinística) porque:
+#   1. É mais fácil de debugar (valores diretos de m³/s, não parâmetros de distribuição)
+#   2. Converge em menos epochs
+#   3. Permite comparação direta com NSE/KGE calculados sobre o valor mediano
+# Fine-tuning futuro pode trocar para "cmal" quando o baseline estiver funcionando.
+head: regression
+output_activation: linear
+
+# [ALTERADO] seq_length: 30 → 14
+#
+# seq_length define quantos dias de histórico o LSTM de hindcast recebe antes
+# de fazer uma previsão. O lag analysis da EDA indicou lag máximo de 3–5 dias
+# para o Itajaí-Açu. Pela regra seq_length ≥ 2 × max_lag, 10 dias seria o mínimo.
+# Usamos 14 como margem de segurança para capturar:
+#   - Eventos de multi-dia com saturação do solo (eventos 2008, 2023)
+#   - Recessão pós-pico (necessária para prever a descida da cheia)
+#
+# Por que não usar 365 como o modelo Google?
+# O modelo global usa 365 porque precisa codificar sazonalidade anual inteira
+# para bacias temperadas do norte. Para o Itajaí-Açu subtropical com resposta
+# rápida, 365 desperdiçaria memória e tornaria o treino 10× mais lento sem ganho.
+#
+# REVISITAR se NSE < 0.60 após treino — sinal de que o modelo não captura
+# condições antecedentes; tentar seq_length: 30 ou 60.
+seq_length: 14
+
+# lead_time: quanto dias à frente prever. 7 dias é o horizonte operacional
+# padrão para alertas de cheia (tempo suficiente para evacuação preventiva).
+lead_time: 7
+
+# [ALTERADO] forecast_overlap: 3 → 14
+#
+# forecast_overlap define por quantos dias o LSTM de forecast "vê"
+# os dados históricos antes do período de previsão. Valor igual a seq_length
+# (overlap total) é o que o tutorial usa e é a configuração mais simples:
+# o LSTM de forecast começa com o mesmo contexto completo que o de hindcast.
+# Valores menores treinam o forecast LSTM com menos contexto histórico,
+# potencialmente forçando-o a depender mais das previsões meteorológicas.
+# Para o baseline, overlap = seq_length é a escolha segura.
+forecast_overlap: 14
+
+# [MANTIDO] timestep_counter: true
+# Adiciona como feature um contador de dias (0, 1, ..., lead_time-1).
+# Permite ao modelo aprender comportamentos diferentes por horizonte de previsão.
+# Ex: erros de timing tendem a crescer com o horizonte — o contador ajuda a
+# compensar esse viés estrutural.
+timestep_counter: true
+
+output_dropout: 0.4
+
+initial_forget_bias: 3
+weight_init_opts:
+  - lstm-ih-xavier
+  - lstm-hh-orthogonal
+  - fc-xavier
+
+# [ALTERADO] statics_embedding hiddens: [100, 100, 20] → [32, 16]
+#
+# Com apenas 10 atributos estáticos (vs. ~60 no modelo global), uma rede de
+# embedding menor é suficiente e menos propensa a overfitting.
+statics_embedding:
+  type: fc
+  hiddens: [16, 8]
+  activation: [tanh, linear]
+  dropout: 0.0
+
+# [ALTERADO] hindcast_embedding e forecast_embedding: adicionados
+#
+# Com apenas 2 features de hindcast (precipitation + streamflow) e 1 de forecast,
+# embeddings pequenos são suficientes. O tutorial do Google usa [100, 20] e [20, 20, 20, 20].
+# Para 1 bacia, usamos versões mais simples.
+# hindcast e forecast usam total_precipitation — mesma feature = "shared group".
+# Shared groups usam forecast_embedding para criar os tensores.
+# A fórmula de input_size do hindcast_lstm usa hindcast_embedding.hiddens[-1].
+# Para não haver mismatch ambos precisam ter a mesma dimensão de saída.
+hindcast_embedding:
+  type: fc
+  hiddens: [8]
+  activation: [linear]
+  dropout: 0.0
+
+forecast_embedding:
+  type: fc
+  hiddens: [8]
+  activation: [linear]
+  dropout: 0.0
+
+# ------------------------------------------------------------------------------
+# TREINAMENTO
+# [ALTERADO] Veja explicações abaixo
+# ------------------------------------------------------------------------------
+
+seed: 42       # semente para reprodutibilidade de resultados
+device: cpu    # trocar para cuda:0 se GPU disponível
+
+# torch.compile(mode='max-autotune') falha no macOS porque o inductor tenta
+# carregar libc++.1.dylib como extensão C++ e não encontra o LC_RPATH correto.
+# Em modo eager (compile: false) o treino funciona normalmente no CPU.
+compile: false
+
+# [ALTERADO] loss: cmalloss → MSE
+# Deve ser consistente com o head. "regression" head requer "MSE" ou "NSELoss".
+# MSE é o mais simples; NSELoss treina diretamente para maximizar NSE mas
+# pode ser instável nas primeiras epochs. Usamos MSE para o baseline.
+loss: MSE
+optimizer: Adam
+
+# [ALTERADO] epochs: 50 → 30
+# Com uma única bacia e dataset pequeno, 30 epochs geralmente são suficientes
+# para convergência. O scheduler ReduceLROnPlateau reduzirá o learning rate
+# se a validação estagnar antes disso.
+epochs: 30
+
+# [ALTERADO] batch_size: 64 → 32
+# Tamanho menor de batch tem dois efeitos para datasets pequenos:
+#   1. Mais atualizações de gradiente por epoch (melhor cobertura dos dados)
+#   2. Gradientes mais ruidosos (efeito regularizante — reduz overfitting)
+# Para ~7300 amostras de treino e seq_length=14: ~500 batches/epoch com bs=32.
+batch_size: 32
+
+# max_updates_per_epoch: -1 significa usar todos os dados em cada epoch.
+# Limitar seria útil com datasets enormes (>100k bacias), mas não aqui.
+max_updates_per_epoch: -1
+
+# [ALTERADO] learning_rate_strategy: ReduceLROnPlateau → StepLR
+# ReduceLROnPlateau é robusto mas requer validação estável para decidir quando
+# reduzir o LR. Com 1 bacia e séries curtas de validação, o sinal pode ser
+# muito ruidoso. StepLR com quedas a cada 10 epochs é mais previsível
+# para o baseline.
+learning_rate_strategy: StepLR
+initial_learning_rate: 0.001
+learning_rate_drop_factor: 0.5
+learning_rate_epochs_drop: 10
+
+clip_gradient_norm: 1.0
+target_noise_std: 0.005
+
+# ------------------------------------------------------------------------------
+# AVALIAÇÃO
+# ------------------------------------------------------------------------------
+
+metrics:
+  - NSE
+  - KGE
+
+validate_every: 1
+validate_n_random_basins: -1
+tester_skip_obs_all_nan: true
+tester_sample_reduction: median
+
+clip_targets_to_zero:
+  - streamflow
+
+# [MANTIDO] predict_last_n: 8
+# Apenas os últimos 8 dias da sequência contribuem para a perda de treinamento.
+# Isso foca o gradiente no período de forecast, não no histórico que o modelo
+# já "sabe". Mantemos 8 dias (= lead_time + 1), que é o padrão do modelo Google.
+predict_last_n: 8
+
+allzero_samples_are_invalid: false
+
+# ------------------------------------------------------------------------------
+# SISTEMA
+# ------------------------------------------------------------------------------
+
+# [ALTERADO] num_workers: 0 → 2
+# 2 workers de data loading em paralelo acelera o treino sem usar muita RAM.
+# Reduzir para 0 se houver erros de "too many open files" no macOS.
+num_workers: 2
+log_loss_every_nth_update: 50
+log_n_figures: 0
+
+# [ALTERADO] cache: disabled (dataset cabe facilmente em RAM)
+# Com 1 bacia e ~40 anos, o dataset inteiro tem < 50 MB. Habilitar cache
+# elimina I/O de disco em cada epoch e acelera treino ~3×.
+cache:
+  enabled: true
+  byte_limit: 1000000000   # 1 GB — mais que suficiente

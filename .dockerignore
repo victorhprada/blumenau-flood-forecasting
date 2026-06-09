@@ -1,0 +1,39 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Git history (the Dockerfile only needs source, not history)
+.git/
+vendor/flood-forecasting/.git/
+
+# Dev/training data (not needed by API)
+data/
+notebooks/
+reports/
+scripts/
+src/
+app/
+
+# Other experiments (API needs only exp03)
+models/experiments/exp02_lag_features/
+models/experiments/exp04_seq_30d/
+models/experiments/exp05_era5_statics/
+models/experiments/mef_lstm_itajai_baseline_0806_213829/
+models/experiments/mef_lstm_itajai_baseline_0806_213846/
+models/experiments/mef_lstm_itajai_baseline_0806_214921/
+models/experiments/mef_lstm_itajai_baseline_0806_214951/
+models/experiments/mef_lstm_itajai_baseline_0906_082446/
+models/experiments/mef_lstm_itajai_baseline_0906_082615/
+models/experiments/mef_lstm_itajai_baseline_0906_083244/
+
+# Dev tools
+.streamlit/
+mlruns/
+wandb/
+*.log
+.env
+.env.*
