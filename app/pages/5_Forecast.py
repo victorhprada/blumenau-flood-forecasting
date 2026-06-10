@@ -135,6 +135,7 @@ def _run_forecast(
         }
     )
     st.dataframe(df_result, hide_index=True, use_container_width=True)
+    st.caption("✅ Abaixo do pré-alerta · ⚠️ Acima do pré-alerta (≥ 1 200 m³/s — Defesa Civil Blumenau)")
 
     rmse_note = (
         f" · Banda ±RMSE: {FORECAST_RMSE[0]:.0f}–{FORECAST_RMSE[-1]:.0f} m³/s (t+0 a t+7)"
