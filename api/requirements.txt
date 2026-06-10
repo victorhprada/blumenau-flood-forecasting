@@ -7,3 +7,4 @@ xarray>=2024.3.0
 netCDF4>=1.7.0
 pyyaml>=6.0.1
 dask>=2024.1.0
+ruamel.yaml>=0.18.0
