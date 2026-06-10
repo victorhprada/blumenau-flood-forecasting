@@ -134,3 +134,5 @@ models/experiments/exp05_era5_statics/exp05_era5_statics_0906_114408/test/model_
 # Reports computed outputs (not raw data)
 !reports/comparison_table.csv
 !reports/forecast_rmse.json
+!reports/figures/
+!reports/figures/*.png
