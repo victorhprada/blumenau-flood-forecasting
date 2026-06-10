@@ -1,11 +1,10 @@
 [build]
 dockerfilePath = "api/Dockerfile"
-watchPatterns = ["api/**", "models/experiments/exp03_nse_loss/**"]
 
 [deploy]
 startCommand = "sh -c 'uvicorn api.main:app --host 0.0.0.0 --port $PORT'"
 healthcheckPath = "/health"
-healthcheckTimeout = 60
+healthcheckTimeout = 120
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
