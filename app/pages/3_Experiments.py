@@ -103,7 +103,7 @@ with col1:
         metrics=["NSE t+7", "KGE t+7"],
         title="Métricas globais (período de teste completo)",
     )
-    st.plotly_chart(fig_global, use_container_width=True, theme=None)
+    st.plotly_chart(fig_global, width="stretch", theme=None)
 
 with col2:
     fig_events = metrics_bar(
@@ -111,7 +111,7 @@ with col2:
         metrics=["NSE 2008", "NSE 2011"],
         title="NSE por evento extremo",
     )
-    st.plotly_chart(fig_events, use_container_width=True, theme=None)
+    st.plotly_chart(fig_events, width="stretch", theme=None)
 
 # ── Accessible explanations ───────────────────────────────────────────────────
 st.subheader("O que cada melhoria representa?")

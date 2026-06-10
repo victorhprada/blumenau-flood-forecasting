@@ -120,7 +120,7 @@ def _run_forecast(
         uncertainty_per_lead=FORECAST_RMSE,
         height=450,
     )
-    st.plotly_chart(fig, use_container_width=True, theme=None)
+    st.plotly_chart(fig, width="stretch", theme=None)
 
     # ── Table ─────────────────────────────────────────────────────────────────
     df_result = pd.DataFrame(

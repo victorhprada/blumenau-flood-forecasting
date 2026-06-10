@@ -110,7 +110,7 @@ fig.update_layout(
     font=dict(color="#aaaaaa"),
 )
 
-st.plotly_chart(fig, use_container_width=True, theme=None)
+st.plotly_chart(fig, width="stretch", theme=None)
 
 # ── Summary stats ─────────────────────────────────────────────────────────────
 st.subheader("Estatísticas do período selecionado")

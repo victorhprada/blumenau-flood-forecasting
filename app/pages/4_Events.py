@@ -68,7 +68,7 @@ fig = hydrograph(
     title=f"{title} — horizonte t+{lead}",
     height=500,
 )
-st.plotly_chart(fig, use_container_width=True, theme=None)
+st.plotly_chart(fig, width="stretch", theme=None)
 
 # ── Metrics for the event ─────────────────────────────────────────────────────
 if "obs" in df.columns and "best_sim" in df.columns:
