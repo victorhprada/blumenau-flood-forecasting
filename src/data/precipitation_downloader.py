@@ -56,13 +56,21 @@ INMET_BASE = "https://apitempo.inmet.gov.br"
 
 
 def _inmet_get(endpoint: str, timeout: int = 30, retries: int = 3) -> list | dict:
-    """GET com retry exponencial para a API do INMET."""
+    """GET with exponential retry for the INMET API. Never retries on 4xx (definitive answer)."""
     url = f"{INMET_BASE}/{endpoint.lstrip('/')}"
     for attempt in range(retries):
         try:
             r = requests.get(url, timeout=timeout)
             r.raise_for_status()
             return r.json()
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code < 500:
+                raise  # 4xx is definitive — station or period doesn't exist, no retry
+            if attempt == retries - 1:
+                raise
+            wait = 2 ** (attempt + 1)
+            logger.warning("INMET attempt %d failed (%s). Retrying in %ds...", attempt + 1, exc, wait)
+            time.sleep(wait)
         except requests.RequestException as exc:
             if attempt == retries - 1:
                 raise
@@ -162,8 +170,14 @@ def download_inmet_station(
                 continue
             df_chunk = pd.DataFrame(data)
             chunks.append(df_chunk)
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else "?"
+            if status == 404:
+                logger.debug("Station %s month %s: no data (404) — skipping", station_id, s)
+            else:
+                logger.warning("Station %s month %s HTTP %s: %s", station_id, s, status, exc)
         except Exception as exc:
-            logger.warning("Erro estação %s mês %s: %s", station_id, s, exc)
+            logger.warning("Station %s month %s error: %s", station_id, s, exc)
 
     if not chunks:
         logger.warning("Nenhum dado encontrado para estação %s", station_id)
