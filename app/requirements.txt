@@ -8,3 +8,4 @@ streamlit-folium>=0.20.0
 xarray>=2024.3.0
 zarr>=2.17.0
 netCDF4>=1.7.0
+matplotlib>=3.9.0
