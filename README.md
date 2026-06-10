@@ -1,6 +1,6 @@
 # Itajaí-Açu Flood Forecasting
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blumenau-flood.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blumenau-flood-forecasting.streamlit.app)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.3-ee4c2c.svg)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg)](https://fastapi.tiangolo.com/)
@@ -17,9 +17,9 @@ Google's **MEF-LSTM** (*Mean-Embedding Forecast LSTM*) fine-tuned on local hydro
 
 | Componente | URL | Status |
 |---|---|---|
-| Dashboard Streamlit | [blumenau-flood.streamlit.app](https://blumenau-flood.streamlit.app) | Streamlit Cloud |
-| Inference API | [blumenau-api.up.railway.app](https://blumenau-api.up.railway.app) | Railway |
-| API docs (Swagger) | [/docs](https://blumenau-api.up.railway.app/docs) | — |
+| Dashboard Streamlit | [blumenau-flood-forecasting.streamlit.app](https://blumenau-flood-forecasting.streamlit.app) | Streamlit Cloud |
+| Inference API | [blumenau-flood-forecasting-production.up.railway.app](https://blumenau-flood-forecasting-production.up.railway.app) | Railway |
+| API docs (Swagger) | [/docs](https://blumenau-flood-forecasting-production.up.railway.app/docs) | — |
 
 > **Nota**: O dashboard Streamlit Cloud consome a API Railway diretamente. Configure a variável
 > de ambiente `FORECAST_API_URL` no Streamlit Cloud apontando para o URL da instância Railway.

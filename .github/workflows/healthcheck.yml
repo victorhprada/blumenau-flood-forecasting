@@ -1,0 +1,21 @@
+name: API healthcheck
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 min — keeps Railway warm + catches regressions
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://blumenau-flood-forecasting-production.up.railway.app/health)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Healthcheck failed — API returned $STATUS"
+            exit 1
+          fi
