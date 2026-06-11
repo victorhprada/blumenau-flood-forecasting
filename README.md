@@ -71,7 +71,7 @@ capacity for a fast-response basin like Itajaí-Açu.
 
 ### September 2011 hydrograph
 
-![Sep 2011 hydrograph](reports/figures/comparison_sep2011.png)
+![Sep 2011 hydrograph](reports/figures/evaluation_flood_events.png)
 
 The model tracks the rising limb and recession reasonably well for moderate events. For
 the 2011 record flood it underestimates the peak by ~71% (737 vs 2,534 m³/s) — see
