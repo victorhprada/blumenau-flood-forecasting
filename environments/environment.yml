@@ -9,6 +9,7 @@ dependencies:
   - pandas
   - scipy
   - xarray
+  - dask
   - netcdf4
   - h5py
   - matplotlib
